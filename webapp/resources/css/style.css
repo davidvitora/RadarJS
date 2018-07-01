@@ -1,0 +1,65 @@
+@import url('https://fonts.googleapis.com/css?family=Press+Start+2P');
+@import url('https://fonts.googleapis.com/css?family=Quantico');
+
+html, body{
+    height: 100%;
+    width: 100%;
+}
+
+html, body{
+    background-color: #C4C4C4;
+}
+
+div.monitor-border{
+    position: relative;
+}
+
+div.monitor-border img{
+    border: 4px outset #C4C4C4;
+}
+
+::-webkit-scrollbar { 
+    display: none; 
+}
+
+div.monitor{
+    overflow-y: scroll;
+    padding: 10px;
+    font-family: 'Press Start 2P', cursive;
+    color: #1C663C;
+    font-size: 14px;
+    position: absolute;
+    top: 40px;
+    left: 40px;
+    z-index: 1;
+    height: 370px;
+    width: 530px;
+    background-color: #333333;
+    border: 4px inset #828282;
+}
+
+input.monitor{
+    background-color: transparent;
+    border: transparent;
+}
+
+input.monitor:focus{
+    outline: 3px dashed #1C663C;
+}
+
+div.esquerda{
+    margin-top: 10px;
+}
+
+button.painel-btn{
+    font-family: 'Quantico', sans-serif;
+    border: 2px outset #828282;
+    border-radius: 2px;
+    background-color: #828282;
+    color: rgb(211, 209, 209);
+    margin: 5px;
+}
+
+button.painel-btn:focus{
+    outline: 1px solid #333333;
+}
