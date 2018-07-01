@@ -1,8 +1,6 @@
 const express = require('express');
 const path = require('path');
 const serveIndex = require('serve-index')
-const Calculo = require('./funcoes').Calculo;
-
 
 var app = express();
 
