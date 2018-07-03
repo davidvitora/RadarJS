@@ -38,6 +38,22 @@ div.monitor{
     border: 4px inset #828282;
 }
 
+.monitor > button {
+    color: #1C663C;
+    background-color: transparent;
+    border: 2px dashed #1C663C;
+    font-size: 14px !important;
+}
+
+.monitor > button:hover {
+    color: rgb(43, 90, 64);
+    border: 2px dashed rgb(43, 90, 64);
+}
+
+.monitor > button:focus {
+    outline: 2px dashed rgb(43, 90, 64);
+}
+
 input.monitor{
     background-color: transparent;
     border: transparent;

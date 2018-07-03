@@ -11,38 +11,73 @@
 <body class="container-fluid" ng-controller="main">
     <div class="row">
         <div class="col-md-5 esquerda">
-            <button ng-click="adicionar_voo()" class="painel-btn"/>Adicionar Voo</button>
+            <button ng-click="change_monitor_view(1, 1)" class="painel-btn"/>Controle de voo</button>
+            <button ng-click="change_monitor_view(1, 2)" class="painel-btn"/>Adicionar Voo</button>
             <button class="painel-btn"/>Remover Voo</button>
+            <button ng-click="change_monitor_view(1, 5)" class="painel-btn"/>Configurações sim.</button>
             <div class="row">
                 <div class="col-md-12 monitor-border">
                     <img src="/public/img/frame-border.png" />
-                    <div class="monitor">
+                    <div ng-if="monitor_1_view == 0" class="monitor">
+                        <p>Mensagem</p>
+                        <p>------------</p>
+                        {{ mensagem.texto }}
+                        <br/>
+                        <button ng-click="mensagem.confirmar_mensagem()">ok</button>
+                    </div>
+                    <div ng-if="monitor_1_view == 1" class="monitor">
                         <p>Voos</p>
                         <p>----------------------------------</p>
                         <p>Número&nbsp;X&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Y&nbsp;&nbsp;&nbsp;Rotação&nbsp;&nbsp;Vel.</p>
-                        <p ng-repeat="voo in voos">
+                        <p class="monitor" ng-repeat="voo in voos">
+                            {{ $index }}
                             <input  style="width: 80px; margin-right: 0px;" class="monitor" type="text" ng-model="voo.numero"/>
                             <input style="width: 70px; margin-right: 0px;" class="monitor" type="number" ng-model="voo.x"/>
                             <input style="width: 70px; margin-right: 0px;" class="monitor" type="number" ng-model="voo.y"/>
                             <input style="width: 65px; margin-right: 0px; text-align: right;" class="monitor" min="0" max="359" type="number" ng-model="voo.rotacao"/>º
                             <input style="width: 50px; margin-left: 15px;" class="monitor" type="number" ng-model="voo.velocidade"/> Km/h
+                            <button ng-click="localizar_voo($index)">Localizar</button>
                         </p>
+                    </div>
+                    <div ng-if="monitor_1_view == 2" class="monitor">
+                        <p>Adicionar novo voo</p>
+                        <p>-------------Dados-----------------</p>
+                        Numero:<input style="width: 80px; margin-right: 0px;" class="monitor" type="text" ng-model="voo_add.numero"/>
+                        <p>----Cordenadas----</p>
+                        Cartesiana - X:<input style="width: 70px; margin-right: 0px;" class="monitor" type="number" ng-model="voo_add.x"/>
+                        Y:<input style="width: 70px; margin-right: 0px;" class="monitor" type="number" ng-model="voo_add.y"/><br/>
+                        Polar - Raio:<input style="width: 70px; margin-right: 0px;" class="monitor" type="number" ng-model="voo_add.raio_polar"/>
+                        Angulo:<input style="width: 65px; margin-right: 0px; text-align: right;" class="monitor" min="0" max="359" type="number" ng-model="voo_add.angulo_polar"/>°
+                        <p>-----Outros------</p>
+                        Rotação:<input style="width: 65px; margin-right: 0px; text-align: right;" class="monitor" min="0" max="359" type="number" ng-model="voo_add.rotacao"/>°<br/>
+                        Velocidade:<input style="width: 50px; margin-left: 15px;" class="monitor" type="number" ng-model="voo_add.velocidade"/>Km/h
+                        <p>-----------------</p>
+                        <button ng-click="adicionar_voo()">Confirmar</button>
+                    </div>
+                    <div ng-if="monitor_1_view == 5" class="monitor">
+                        <p>Configurações da simulação</p>
+                        <p>-------------Dados-----------------</p>
+                        <div>
+                            <label for="proporcao_tempo">Proporção do tempo para cada segundo:
+                            <input id="proporcao_tempo" style="width: 100px; margin-right: 0px; text-align: right" class="monitor" type="number" ng-model="config.proporcao_tempo"/> s
+                        </div>
+                        <br/>
+                        <div>
+                            <label for="distancia_aeroporto">Distancia(Km) do aeroporto para alerta:
+                            <input id="distancia_aeroporto" style="width: 100px; margin-right: 0px; text-align: right" class="monitor" type="number" ng-model="config.distancia_minima_aeroporto"/> Km
+                        </div>
+                        <br/>
+                        <div>
+                            <label for="distancia_avioes">Distancia(Km) dos aviões para alerta:
+                            <input id="distancia_avioes" style="width: 100px; margin-right: 0px; text-align: right" class="monitor" type="number" ng-model="config.distancia_minima_avioes"/>Km
+                        </div> 
                     </div>
                 </div>
             </div>
-            <button ng-click="limpar_relatorio()" class="painel-btn"/>Limpar relatório</button>
             <div class="row">
                 <div class="col-md-12 monitor-border">
                     <img src="/public/img/frame-border.png" />
                     <div class="monitor">
-                        <div>
-                            <label for="distancia_aeroporto">Dist. Aeroporto:
-                            <input id="distancia_aeroporto" style="width: 50px; margin-right: 0px;" class="monitor" type="number" ng-model="config.distancia_minima_aeroporto"/>
-                        </div>
-                        <div>
-                            <label for="distancia_aeroporto">Dist. Avioes:
-                            <input id="distancia_aeroporto" style="width: 50px; margin-right: 0px;" class="monitor" type="number" ng-model="config.distancia_minima_avioes"/>
-                        </div> 
                         <p>Relatório
                         <div ng-if="texto.length > 0" ng-repeat="texto in relatorio">
                             <p>----------------------------------</p>
@@ -56,7 +91,7 @@
         <div class="col-md-7 esquerda">
             <div class="row">
                 <div class="col-md-12">
-                        <svg ng-mousedown="iniciar_tracking_mouse_radar($event)" ng-mouseup="parar_tracking_mouse_radar($event)" ng-mouseleave="parar_tracking_mouse_radar($event)" version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+                        <svg  style="clip-path: circle(48% at 49.7% 49.3%)" ng-mousedown="iniciar_tracking_mouse_radar($event)" ng-mouseup="parar_tracking_mouse_radar($event)" ng-mouseleave="parar_tracking_mouse_radar($event)" version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
                             viewBox="0 0 994 990" style="enable-background:new 0 0 994 990;" xml:space="preserve">
                             <style type="text/css">
                                 .st0{fill:#333333;stroke:#000000;stroke-width:4;stroke-miterlimit:10;}
@@ -67,7 +102,11 @@
                                 .st5{opacity:8.000000e-02;fill:url(#SVGID_1_);}
                             </style>
                             <circle ng-mouseover="mouse_over_radar($event)"  class="st0" cx="495.4" cy="488.8" r="450">
+                                
                             </circle>
+                            <image rota height="10000px" width="10000px" transform="translate( {{calc_x(-450)}}, {{calc_y(-450)}} )" xlink:href="public/outros/mundo.svg"/>
+                            <text style="user-select: none" transform="translate( 400, 80 )" fill="white">Cordenadas: X: {{ (radar.dif_x - radar.dif_x_c).toFixed(1) }}</text>
+                            <text style="user-select: none" transform="translate( 560, 80 )" fill="white">Y: {{ (radar.dif_y - radar.dif_y_c).toFixed(1) }}</text>
                             <g>
                                 <path class="st1" d="M175,159.3l-21.3,21.3c-4.7,4.7-12.3,4.7-17,0l-46.4-46.4c-4.7-4.7-4.7-12.3,0-17L111.6,96
                                     c4.7-4.7,12.3-4.7,17,0l46.4,46.4C179.7,147,179.7,154.7,175,159.3z"/>
@@ -159,15 +198,15 @@
                                     </g>
                                 </g>
                             </g>
-                            <g>
-                                <text transform="translate( {{calc_x(0)}}, {{calc_y(0)}} )" fill="white">Aeroporto</text>
-                                <image rota height="40px" width="40px" transform="translate( {{calc_x(0)}}, {{calc_y(0)}} )" xlink:href="public/outros/airport.svg"/>
+                            <g style="user-select: none;">
+                                <text transform="translate( {{calc_x(-2)}}, {{calc_y(-1)}} )" fill="white">Aeroporto</text>
+                                <image rota height="20px" width="20px" transform="translate( {{calc_x(0)}}, {{calc_y(0)}} )" xlink:href="public/outros/airport.svg"/>
                             </g>
-                            <g ng-repeat="voo in voos">
-                                <text transform="translate( {{calc_x(voo.x)}}, {{calc_y(voo.y - 40)}} )" fill="white">Voo: {{ voo.numero }} </text>
-                                <text transform="translate( {{calc_x(voo.x)}}, {{calc_y(voo.y - 20)}} )" fill="white">Coordenada polar: Raio: {{ voo.coordenada_polar_r }} / Angulo: {{ voo.coordenada_polar_ang }}°</text>
-                                <text transform="translate( {{calc_x(voo.x)}}, {{calc_y(voo.y)}} )" fill="white">Dist. Aeroporto: {{ voo.distancia_aeroporto }}</text>
-                                <image rota height="40px" width="40px" transform="translate( {{calc_x(voo.x)}}, {{calc_y(voo.y)}} ) rotate( {{ tirar_diferenca(voo.rotacao) }} 20 20)" xlink:href="public/outros/plane.png"/>
+                            <g style="cursor: pointer; user-select: none;" ng-repeat="voo in voos">
+                                <text transform="translate( {{calc_x(voo.x - 3)}}, {{calc_y(voo.y - 3.5)}} )" fill="white">Voo: {{ voo.numero }} </text>
+                                <text transform="translate( {{calc_x(voo.x - 3)}}, {{calc_y(voo.y - 2)}} )" fill="white">Raio: {{ voo.raio_polar }} / Angulo: {{ voo.angulo_polar }}°</text>
+                                <text transform="translate( {{calc_x(voo.x - 3)}}, {{calc_y(voo.y - 0.5)}} )" fill="white">Dist. Aeroporto: {{ voo.distancia_aeroporto }}</text>
+                                <image rota height="20px" width="20px" transform="translate( {{calc_x(voo.x)}}, {{calc_y(voo.y)}} ) rotate( {{ tirar_diferenca(voo.rotacao) }} 10 10)" xlink:href="public/outros/plane.png"/>
                             </g>
                         </svg>
                 </div>

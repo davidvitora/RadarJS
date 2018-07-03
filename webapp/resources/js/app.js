@@ -19,12 +19,17 @@ var Calculo = {
         result.r = Math.sqrt(v1 + v2); // Raiz da soma dos quadrados = tenho o Raio(R² = x² + y²)
 
         result.ang = Math.toDegrees((Math.atan2(y, x))); //Arco tangente ou tangente inversa de y/x = tenho o Angulo (tg-1(m) = y/x)
+        
+        if( result.ang < 0 || result.ang > 359 ){
+            result.ang = 359 + ( result.ang + 1 );
+        }
         return result;
     },
     transformaCartesiano: function(r, ang){
-        let result = {};
-        result[x] = r * Math.cos(Math.toRadians(ang)); //x=R.cosX  ---  Math.toRadians - converte angulo de graus para o equivalente em radianos;
-        result[y] = r * Math.sin(Math.toRadians(ang)); //y=R.senY
+        let result = {x: 0, y: 0};
+        result.x = r * Math.cos(Math.toRadians(ang)); //x=R.cosX  ---  Math.toRadians - converte angulo de graus para o equivalente em radianos;
+        result.y = r * Math.sin(Math.toRadians(ang)); //y=R.senY
+        return result;
     },
     calculaRotacao: function(x, y, ang, xR, yR){
         let result = {};
@@ -124,9 +129,9 @@ var Calculo = {
     calculaCoeficientLinear: function(coeficienteAngular, x, y) {
         return ( y - coeficienteAngular * x);
     },
-    calculaMovimento: function(x, y, direcao, velocidade, horas){
+    calculaMovimento: function(x, y, direcao, velocidade, segundos){
         resultado = {};
-        hipotenusa = velocidade * horas;
+        hipotenusa = ( ( velocidade / 60 ) / 60 ) * segundos;
         radianos =  Math.toRadians(direcao);
         diferenca_y = parseFloat(( Math.sin(radianos) * hipotenusa ).toFixed(14));
         diferenca_x = parseFloat(( Math.cos(radianos) * hipotenusa ).toFixed(14));
@@ -139,9 +144,15 @@ var Calculo = {
 function simular_func(param, callback){
     var voos = param.voos;
     var config = param.config;
+    var static = param.static;
     var resposta = { voos: [], notificacoes: []};
     voos.forEach(voo => {
-        resultado_movimento = Calculo.calculaMovimento(voo.x, voo.y, voo.rotacao, voo.velocidade, 1);
+        //calcula 1 segundo
+        if(static != true){
+            resultado_movimento = Calculo.calculaMovimento(voo.x, voo.y, voo.rotacao, voo.velocidade, config.proporcao_tempo);
+        } else {
+            resultado_movimento = Calculo.calculaMovimento(voo.x, voo.y, voo.rotacao, voo.velocidade, 0);
+        }
         voo.x = resultado_movimento.x;
         voo.y = resultado_movimento.y;
         voo.distancia_aeroporto = Calculo.calculaDistanciaDoisPontos(voo.x, voo.y, 0, 0).toFixed(2);
@@ -165,8 +176,8 @@ function simular_func(param, callback){
 
         cordenada_polar = Calculo.transformaPolar(voo.x, voo.y);
         if( cordenada_polar != undefined){
-            voo.coordenada_polar_r = cordenada_polar.r.toFixed(2);
-            voo.coordenada_polar_ang = cordenada_polar.ang.toFixed(0);
+            voo.raio_polar = cordenada_polar.r.toFixed(2);
+            voo.angulo_polar = cordenada_polar.ang.toFixed(0);
         }
     });
     resposta.voos = voos;
@@ -202,9 +213,14 @@ app.controller("main", function($scope){
 
     function logMouseMove(e) {
         e = e || window.event;	
-
-        $scope.radar.dif_x =  $scope.radar.dif_x + ( ($scope.radar.init_x - e.clientX) / 4 );
-        $scope.radar.dif_y =  $scope.radar.dif_y + ( ($scope.radar.init_y - e.clientY) / 4 );
+        var temp_x = $scope.radar.dif_x + ( ($scope.radar.init_x - e.clientX) / 4 );
+        var temp_y = $scope.radar.dif_y + ( ($scope.radar.init_y - e.clientY) / 4 );
+        if(temp_x < 5000 && temp_x > -5000){
+            $scope.radar.dif_x =  temp_x;
+        }
+        if(temp_y < 5000 && temp_y > -5000){
+            $scope.radar.dif_y =  temp_y;
+        }
         $scope.$apply();
     }
 
@@ -227,29 +243,91 @@ app.controller("main", function($scope){
     }
 
     $scope.calc_x = function(x){
-        return ( x + $scope.radar.dif_x);
+        return ( ( x * 10 ) + $scope.radar.dif_x);
     }
 
     $scope.calc_y = function(y){
-        return ( y + $scope.radar.dif_y);
+        return ( ( y * 10 ) + $scope.radar.dif_y);
     }
 
+    $scope.monitor_1_view = 1;
+    $scope.mensagem = { texto: "", view_salvo: 1, enviar: null}
     $scope.autor = "David Vitor Antonio";
     $scope.simulando = false;
-    $scope.radar = { dif_x: 476, dif_y: 470 };
+    $scope.radar = { dif_x_c: 485.5, dif_x: 485.5, dif_y_c: 479, dif_y: 479 };
     $scope.voos = [];
     $scope.relatorio = [];
-    $scope.watch
     $scope.cont = 1
-    var voo_modelo = {numero: "V"+$scope.cont, x: 0, y: 0, rotacao: 0, velocidade: 0};
-    $scope.voos.push(JSON.parse(JSON.stringify(voo_modelo)));
+    var voo_modelo = {numero: "V"+$scope.cont, x: 0, y: 0, angulo_polar: 0, raio_polar: 0 , rotacao: 0, velocidade: 10};
+    $scope.voo_add = JSON.parse(JSON.stringify(voo_modelo));
+
+    $scope.$watchGroup(['voo_add.x', 'voo_add.y'], function(a,b,c) {
+        if($scope.voo_add.mudou != true){
+            var resultado =  Calculo.transformaPolar($scope.voo_add.x, $scope.voo_add.y);
+            $scope.voo_add.angulo_polar = resultado.ang;
+            $scope.voo_add.raio_polar = resultado.r;
+            $scope.voo_add.mudou = true;
+        } else {
+            $scope.voo_add.mudou = false;
+        }
+    });
+
+    $scope.$watchGroup(['voo_add.angulo_polar', 'voo_add.raio_polar'], function(a,b,c) {
+        if($scope.voo_add.mudou != true){
+            var resultado =  Calculo.transformaCartesiano($scope.voo_add.raio_polar, $scope.voo_add.angulo_polar);
+            $scope.voo_add.x = resultado.x;
+            $scope.voo_add.y = resultado.y;
+            $scope.voo_add.mudou = true;
+        } else {
+            $scope.voo_add.mudou = false;
+        }
+    });
+
+    $scope.$watch('voos', function(a,b,c) {
+        if( $scope.simulando != true ){
+            simular_func({ voos: $scope.voos, config: $scope.config, static: true }, function(res){
+				$scope.relatorio = res.notificacoes;
+                $scope.voos = res.voos;
+				console.log("Atualizado devido a modificação");
+				console.log(res);
+                $scope.$apply();
+			});
+        }
+    }, true);
+
+    $scope.mensagem.enviar = function(mensagem){
+        $scope.mensagem.view_salvo = $scope.monitor_1_view;
+        $scope.mensagem.texto = mensagem;
+        $scope.monitor_1_view = 0;
+    }
+
+    $scope.mensagem.confirmar_mensagem = function(){
+        $scope.monitor_1_view = $scope.mensagem.view_salvo;
+        $scope.tocarSomBotaoClick();
+    }
+
+    $scope.change_monitor_view = function(monitor_index, view){
+        $scope['monitor_'+ monitor_index +'_view'] = view;
+        $scope.tocarSomBotaoClick();
+    }
 
     $scope.adicionar_voo = function(){
-        $scope.cont = $scope.cont + 1;
-        voo_modelo.numero = "V" + $scope.cont;
-        $scope.voos.push(JSON.parse(JSON.stringify(voo_modelo)));
+        if($scope.voos.findIndex(function(voo){ return ( voo.numero == $scope.voo_add.numero) })  == -1){
+            $scope.voos.push($scope.voo_add);
+            $scope.cont = $scope.cont + 1;
+            voo_modelo.numero = "V" + $scope.cont;
+            $scope.voo_add = JSON.parse(JSON.stringify(voo_modelo));
+            $scope.$apply();
+            $scope.tocarSomBotaoClick();
+        } else {
+            $scope.mensagem.enviar("Já existe um voo com o numero " + $scope.voo_add.numero)
+        }
+    }
+
+    $scope.localizar_voo = function(voo_index){
+        $scope.radar.dif_x = $scope.radar.dif_x_c - ( $scope.voos[voo_index].x * 10).toFixed(1);
+        $scope.radar.dif_y = $scope.radar.dif_y_c - ( $scope.voos[voo_index].y * 10).toFixed(1);
         $scope.$apply();
-        $scope.tocarSomBotaoClick();
     }
 
     $scope.limpar_relatorio = function(){
@@ -257,7 +335,7 @@ app.controller("main", function($scope){
         $scope.tocarSomBotaoClick()
     }
 
-    $scope.config = { distancia_minima_aeroporto: 10, distancia_minima_avioes: 20 };
+    $scope.config = { distancia_minima_aeroporto: 10, distancia_minima_avioes: 20, proporcao_tempo: 1 };
 	
 	$scope.rotina_de_atualizacao = function(){
 		if($scope.simulando == true){
