@@ -45,6 +45,29 @@ div.monitor{
     font-size: 14px !important;
 }
 
+.monitor > input[type=checkbox] {
+    padding-left:5px;
+    padding-right:5px;
+    border-radius:0px;
+
+    -webkit-appearance:button;
+
+    border: 2px dashed #1C663C;
+
+    background-color:#333;
+    color:#FFF;
+    white-space: nowrap;
+    overflow:hidden;
+
+    width:15px;
+    height:15px;
+}
+
+.monitor > input[type=checkbox]:checked {
+    background-color:#1C663C;
+    border: 2px dashed #333;
+}
+
 .monitor > button:hover {
     color: rgb(43, 90, 64);
     border: 2px dashed rgb(43, 90, 64);

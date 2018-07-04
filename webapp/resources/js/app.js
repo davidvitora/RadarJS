@@ -33,28 +33,28 @@ var Calculo = {
     },
     calculaRotacao: function(x, y, ang, xR, yR){
         let result = {};
-        x -= xR;
-        y -= yR;
+        //x -= xR;
+        //y -= yR;
 
-        result[x] = x * Math.cos(Math.toRadians(ang)) - y * Math.sin(Math.toRadians(ang)); //x' = x * cos(B) - y * sen(B)
-        result[y] = y * Math.cos(Math.toRadians(ang)) + x * Math.sin(Math.toRadians(ang)); //y' = y * cos(B) + x * sen(B)
+        result.x = x * Math.cos(Math.toRadians(ang).toFixed(15)) - y * Math.sin(Math.toRadians(ang).toFixed(15)).toFixed(15); //x' = x * cos(B) - y * sen(B)
+        result.y = y * Math.cos(Math.toRadians(ang).toFixed(15)) + x * Math.sin(Math.toRadians(ang).toFixed(15)).toFixed(15); //y' = y * cos(B) + x * sen(B)
 
-        result[x] += xR;
-        result[y] += yR;
+        //result.x += xR;
+        //result.y += yR;
 
         return result;
     },
     calculaEscala: function(x, y, Sx, Sy){
         let result = {};
-        result[x] = x * (Sx / 100);
-        result[y] = y * (Sy / 100);
+        result.x = x * (Sx / 100);
+        result.y = y * (Sy / 100);
 
         return result;
     },
     calculaTranslacao: function(x, y, Tx, Ty){
         let result = {};
-        result[x] = x + Tx;
-        result[y] = y + Ty;
+        result.x = x + Tx;
+        result.y = y + Ty;
 
         return result;
     },
@@ -251,15 +251,40 @@ app.controller("main", function($scope){
     }
 
     $scope.monitor_1_view = 1;
+    $scope.monitor_13_view = 0;
     $scope.mensagem = { texto: "", view_salvo: 1, enviar: null}
     $scope.autor = "David Vitor Antonio";
     $scope.simulando = false;
     $scope.radar = { dif_x_c: 485.5, dif_x: 485.5, dif_y_c: 479, dif_y: 479 };
     $scope.voos = [];
     $scope.relatorio = [];
-    $scope.cont = 1
-    var voo_modelo = {numero: "V"+$scope.cont, x: 0, y: 0, angulo_polar: 0, raio_polar: 0 , rotacao: 0, velocidade: 10};
+    $scope.cont = 1;
+    $scope.alterar_voos = { x: 0, y: 0, angulo_polar: 0, raio_polar: 0 , graus: 0, escala_x: 100, escala_y: 100 };
+    var voo_modelo = {numero: "V"+$scope.cont, x: 10, y: 0, angulo_polar: 0, raio_polar: 10 , rotacao: 0, velocidade: 10};
     $scope.voo_add = JSON.parse(JSON.stringify(voo_modelo));
+    $scope.voos.push(JSON.parse(JSON.stringify(voo_modelo)));
+
+    $scope.$watchGroup(['alterar_voos.x', 'alterar_voos.y'], function(a,b,c) {
+        if($scope.alterar_voos.mudou != true){
+            var resultado =  Calculo.transformaPolar($scope.alterar_voos.x, $scope.alterar_voos.y);
+            $scope.alterar_voos.angulo_polar = resultado.ang;
+            $scope.alterar_voos.raio_polar = resultado.r;
+            $scope.alterar_voos.mudou = true;
+        } else {
+            $scope.alterar_voos.mudou = false;
+        }
+    });
+
+    $scope.$watchGroup(['alterar_voos.angulo_polar', 'alterar_voos.raio_polar'], function(a,b,c) {
+        if($scope.alterar_voos.mudou != true){
+            var resultado =  Calculo.transformaCartesiano($scope.alterar_voos.raio_polar, $scope.alterar_voos.angulo_polar);
+            $scope.alterar_voos.x = resultado.x;
+            $scope.alterar_voos.y = resultado.y;
+            $scope.alterar_voos.mudou = true;
+        } else {
+            $scope.alterar_voos.mudou = false;
+        }
+    });
 
     $scope.$watchGroup(['voo_add.x', 'voo_add.y'], function(a,b,c) {
         if($scope.voo_add.mudou != true){
@@ -288,8 +313,6 @@ app.controller("main", function($scope){
             simular_func({ voos: $scope.voos, config: $scope.config, static: true }, function(res){
 				$scope.relatorio = res.notificacoes;
                 $scope.voos = res.voos;
-				console.log("Atualizado devido a modificação");
-				console.log(res);
                 $scope.$apply();
 			});
         }
@@ -306,8 +329,10 @@ app.controller("main", function($scope){
         $scope.tocarSomBotaoClick();
     }
 
-    $scope.change_monitor_view = function(monitor_index, view){
-        $scope['monitor_'+ monitor_index +'_view'] = view;
+    $scope.change_monitor_view = function(changes){
+        changes.forEach(function(change){
+            $scope['monitor_'+ change[0] +'_view'] = change[1];
+        });
         $scope.tocarSomBotaoClick();
     }
 
@@ -328,6 +353,42 @@ app.controller("main", function($scope){
         $scope.radar.dif_x = $scope.radar.dif_x_c - ( $scope.voos[voo_index].x * 10).toFixed(1);
         $scope.radar.dif_y = $scope.radar.dif_y_c - ( $scope.voos[voo_index].y * 10).toFixed(1);
         $scope.$apply();
+    }
+
+    $scope.confirmar_translacao = function(){
+        $scope.voos.forEach(function(voo){
+            if(voo.selecionado){
+                var resultado = Calculo.calculaTranslacao(voo.x, voo.y, $scope.alterar_voos.x, $scope.alterar_voos.y);
+                voo.x = resultado.x;
+                voo.y = resultado.y;
+            }
+        })
+    }
+
+    $scope.confirmar_rotacao = function(){
+        if($scope.alterar_voos.graus == undefined){
+            $scope.mensagem.enviar("O angulo deverá estar entre 0 e 359");
+            return;
+        } else {
+            $scope.voos.forEach(function(voo){
+                if(voo.selecionado){
+                    var resultado = Calculo.calculaRotacao(voo.x, voo.y, $scope.alterar_voos.graus);
+                    voo.x = resultado.x;
+                    voo.y = resultado.y;
+                }
+            })
+        }
+        
+    }
+
+    $scope.confirmar_escalonamento = function(){
+        $scope.voos.forEach(function(voo){
+            if(voo.selecionado){
+                var resultado = Calculo.calculaEscala(voo.x, voo.y, $scope.alterar_voos.escala_x, $scope.alterar_voos.escala_y);
+                voo.x = resultado.x;
+                voo.y = resultado.y;
+            }
+        })
     }
 
     $scope.limpar_relatorio = function(){
